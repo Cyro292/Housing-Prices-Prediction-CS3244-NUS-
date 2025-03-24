@@ -1,1 +1,26 @@
-pandas===2.2.3
+# Core machine learning library (includes StandardScaler)
+scikit-learn==1.2.0
+
+# Categorical encoding techniques (includes TargetEncoder)
+category_encoders==2.5.0
+
+# Data manipulation
+pandas==2.2.3
+numpy==1.23.5
+
+# Data visualization
+matplotlib==3.6.2
+seaborn==0.12.2
+
+# Scientific computing (if needed)
+scipy==1.9.3
+
+# Model persistence and utility functions
+joblib==1.2.0
+
+
+tables==3.8.0
+gensim==4.3.0
+blosc2==2.0.0
+cython>=0.29.21
+FuzzyTM>=0.4.0
