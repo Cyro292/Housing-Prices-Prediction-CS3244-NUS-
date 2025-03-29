@@ -1,2 +1,4 @@
 .env
 venv
+merged_data.csv
+processed_data.csv
