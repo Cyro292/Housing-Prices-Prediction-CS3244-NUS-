@@ -176,6 +176,8 @@ def get_cleaned_data(
     if exclude_features is not None:
         X = X.drop(columns=exclude_features, errors="ignore")
 
+    X = X.drop("remaining_lease", axis=1)
+
     # Step 1: Drop rows with any missing values
     original_shape = X.shape
     if y is not None:
@@ -193,10 +195,14 @@ def get_cleaned_data(
     # Step 2: Process categorical features
 
     # Convert storey_range to numeric (take the average of the range)
-    if 'storey_range' in X.columns:
-        X['storey_range'] = X['storey_range'].apply(lambda x: 
-            sum(int(i) for i in x.replace('TO', '').split() if i.isdigit()) / 2 
-            if isinstance(x, str) else x)
+    if "storey_range" in X.columns:
+        X["storey_range"] = X["storey_range"].apply(
+            lambda x: (
+                sum(int(i) for i in x.replace("TO", "").split() if i.isdigit()) / 2
+                if isinstance(x, str)
+                else x
+            )
+        )
         
     # convert flat_type to numeric
     if 'flat_type' in X.columns:
@@ -211,41 +217,33 @@ def get_cleaned_data(
             'EXECUTIVE': 7,
         }
         X['flat_type_ordered'] = X['flat_type'].map(flat_type_mapping)
-
-    if 'flat_model' in X.columns:
-        
     
     # One-hot encode town and flat_type if they exist
     categorical_cols = ['town', 'flat_model']
-    if "storey_range" in X.columns:
-        X["storey_range"] = X["storey_range"].apply(
-            lambda x: (
-                sum(int(i) for i in x.replace("TO", "").split() if i.isdigit()) / 2
-                if isinstance(x, str)
-                else x
-            )
-        )
-
-    # One-hot encode town and flat_type if they exist
-    categorical_cols = ["town", "flat_type", "flat_model"]
     for col in categorical_cols:
         if col in X.columns:
+            X[col] = X[col].str.lower().str.strip()
             dummies = pd.get_dummies(X[col], prefix=col, drop_first=True)
             X = pd.concat([X, dummies], axis=1)
             X = X.drop(col, axis=1)
     
 
     # Step 3: Process time-related features
+    
+    if "lease_commence_date" in X.columns and "month" in X.columns:
 
-    # Calculate flat age based on lease_commence_date if it exists
-    if 'lease_commence_date' in X.columns and 'month' in X.columns:
         def get_num_months(date):
-            return int(date.split('-')[0]) * 12 + int(date.split('-')[1])
+            year = date.year
+            month = date.month
+            return year * 12 + month
 
         # Extract the year from the month column
+        # X['month'] = pd.to_datetime(X['month'], format='%Y-%m')
         first_transaction = X['month'].min()
         first_trans_offset = get_num_months(first_transaction)
+
         X['relative_month'] = X['month'].apply(get_num_months) - first_trans_offset
+        X["transaction_year"] = pd.to_datetime(X["month"]).dt.year
 
         # Calculate flat age at transaction
         X['flat_age'] = X['transaction_year'] - X['lease_commence_date'] 
@@ -261,13 +259,7 @@ def get_cleaned_data(
     if 'block' in X.columns:
         # Convert block to numeric by removing non-numeric characters
         X['block'] = X['block'].replace(r'\D', '', regex=True).astype(int)
-    
 
-    
-    # Step 4: Handle non-numeric columns that shouldn't be one-hot encoded
-    
-
-    
     # Step 5: Normalize/scale numeric features
     numeric_cols = X.select_dtypes(include=["int64", "float64"]).columns
     for col in numeric_cols:
