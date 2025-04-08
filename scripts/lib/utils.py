@@ -222,6 +222,18 @@ def get_cleaned_data(
     if "street_name" in X.columns:
         X = X.drop("street_name", axis=1)
 
+    if "storey_range" in X.columns:
+        # convert storey_range to numeric (take the average of the range)
+        X["storey_range"] = X["storey_range"].apply(
+            lambda x: (
+                sum(int(i) for i in x.replace("TO", "").split() if i.isdigit()) / 2
+                if isinstance(x, str)
+                else x
+            )
+        )
+        
+        
+
     # Step 4: Handle non-numeric columns that shouldn't be one-hot encoded
 
     # Drop street_name as it's too granular for modeling
