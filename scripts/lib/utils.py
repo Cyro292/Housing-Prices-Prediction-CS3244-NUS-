@@ -268,6 +268,6 @@ def get_train_split_data(
         raise ValueError("Both X and y must be provided. Or neither.")
     
     if X is None and y is None:
-        X, y = load_all_resale_data()
+        X, y = get_cleaned_data()
     
     return train_test_split(X, y, train_size=train_size, random_state=random_state)
