@@ -1,0 +1,10 @@
+README.md
+setup.py
+cs3244_assignment1.egg-info/PKG-INFO
+cs3244_assignment1.egg-info/SOURCES.txt
+cs3244_assignment1.egg-info/dependency_links.txt
+cs3244_assignment1.egg-info/top_level.txt
+lib/__init__.py
+lib/eval.py
+lib/utils.py
+tests/test.py
