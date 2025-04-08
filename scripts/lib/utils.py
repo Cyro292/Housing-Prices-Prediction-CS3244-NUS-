@@ -141,6 +141,9 @@ def load_all_resale_data(
         month_column=month_column,
         verbose=verbose
     )
+
+
+
     
 def get_cleaned_data(
     X: pd.DataFrame = None,
@@ -189,35 +192,65 @@ def get_cleaned_data(
         X['storey_range'] = X['storey_range'].apply(lambda x: 
             sum(int(i) for i in x.replace('TO', '').split() if i.isdigit()) / 2 
             if isinstance(x, str) else x)
+        
+    # convert flat_type to numeric
+    if 'flat_type' in X.columns:
+        flat_type_mapping = {
+            '1 ROOM': 1,
+            '2 ROOM': 2,
+            '3 ROOM': 3,
+            '4 ROOM': 4,
+            '5 ROOM': 5,
+            'MULTI-GENERATION': 6,
+            'MULTI GENERATION': 6,
+            'EXECUTIVE': 7,
+        }
+        X['flat_type_ordered'] = X['flat_type'].map(flat_type_mapping)
+
+    if 'flat_model' in X.columns:
+        
     
     # One-hot encode town and flat_type if they exist
-    categorical_cols = ['town', 'flat_type', 'flat_model']
+    categorical_cols = ['town', 'flat_model']
     for col in categorical_cols:
         if col in X.columns:
             dummies = pd.get_dummies(X[col], prefix=col, drop_first=True)
             X = pd.concat([X, dummies], axis=1)
             X = X.drop(col, axis=1)
     
+
     # Step 3: Process time-related features
     
     # Calculate flat age based on lease_commence_date if it exists
     if 'lease_commence_date' in X.columns and 'month' in X.columns:
+        def get_num_months(date):
+            return int(date.split('-')[0]) * 12 + int(date.split('-')[1])
+
         # Extract the year from the month column
-        X['transaction_year'] = pd.to_datetime(X['month']).dt.year
-        
+        first_transaction = X['month'].min()
+        first_trans_offset = get_num_months(first_transaction)
+        X['relative_month'] = X['month'].apply(get_num_months) - first_trans_offset
+
         # Calculate flat age at transaction
-        X['flat_age'] = X['transaction_year'] - X['lease_commence_date']
+        X['flat_age'] = X['transaction_year'] - X['lease_commence_date'] 
         
         # Drop the original columns as we've created a derived feature
         X = X.drop(['lease_commence_date', 'month'], axis=1)
     
+     # Drop street_name as it's too granular for modeling
     if 'street_name' in X.columns:
         X = X.drop('street_name', axis=1)
-        
-        
+
+    # ensure block is numeric
+    if 'block' in X.columns:
+        # Convert block to numeric by removing non-numeric characters
+        X['block'] = X['block'].replace(r'\D', '', regex=True).astype(int)
+    
+
+    
     # Step 4: Handle non-numeric columns that shouldn't be one-hot encoded
     
-    # Drop street_name as it's too granular for modeling
+
     
     
     # Step 5: Normalize/scale numeric features
