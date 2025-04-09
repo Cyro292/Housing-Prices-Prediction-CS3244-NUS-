@@ -144,10 +144,6 @@ def load_all_resale_data(
     )
 
 
-
-
-
-    
 def get_cleaned_data(
     X: pd.DataFrame = None,
     y: pd.Series = None,
@@ -170,15 +166,12 @@ def get_cleaned_data(
         Cleaned feature dataframe and target series.
     """
 
-    # If include_features or exclude_features are provided, filter the columns
-    if include_features is not None:
-        X = X[include_features]
-    if exclude_features is not None:
-        X = X.drop(columns=exclude_features, errors="ignore")
+    if "remaining_lease" in X.columns:
+        X = X.drop("remaining_lease", axis=1)
 
-    X = X.drop("remaining_lease", axis=1)
+    if "street_name" in X.columns:
+        X = X.drop("street_name", axis=1)
 
-    # Step 1: Drop rows with any missing values
     original_shape = X.shape
     if y is not None:
         # Combine X and y to ensure we drop the same rows from both
@@ -192,8 +185,6 @@ def get_cleaned_data(
     if original_shape[0] > X.shape[0]:
         print(f"Dropped {original_shape[0] - X.shape[0]} rows with missing values.")
 
-    # Step 2: Process categorical features
-
     # Convert storey_range to numeric (take the average of the range)
     if "storey_range" in X.columns:
         X["storey_range"] = X["storey_range"].apply(
@@ -203,33 +194,7 @@ def get_cleaned_data(
                 else x
             )
         )
-        
-    # convert flat_type to numeric
-    if 'flat_type' in X.columns:
-        flat_type_mapping = {
-            '1 ROOM': 1,
-            '2 ROOM': 2,
-            '3 ROOM': 3,
-            '4 ROOM': 4,
-            '5 ROOM': 5,
-            'MULTI-GENERATION': 6,
-            'MULTI GENERATION': 6,
-            'EXECUTIVE': 7,
-        }
-        X['flat_type_ordered'] = X['flat_type'].map(flat_type_mapping)
-    
-    # One-hot encode town and flat_type if they exist
-    categorical_cols = ['town', 'flat_model']
-    for col in categorical_cols:
-        if col in X.columns:
-            X[col] = X[col].str.lower().str.strip()
-            dummies = pd.get_dummies(X[col], prefix=col, drop_first=True)
-            X = pd.concat([X, dummies], axis=1)
-            X = X.drop(col, axis=1)
-    
 
-    # Step 3: Process time-related features
-    
     if "lease_commence_date" in X.columns and "month" in X.columns:
 
         def get_num_months(date):
@@ -237,41 +202,114 @@ def get_cleaned_data(
             month = date.month
             return year * 12 + month
 
-        # Extract the year from the month column
-        # X['month'] = pd.to_datetime(X['month'], format='%Y-%m')
-        first_transaction = X['month'].min()
+        first_transaction = X["month"].min()
         first_trans_offset = get_num_months(first_transaction)
 
-        X['relative_month'] = X['month'].apply(get_num_months) - first_trans_offset
+        X["relative_month"] = X["month"].apply(get_num_months) - first_trans_offset
         X["transaction_year"] = pd.to_datetime(X["month"]).dt.year
 
-        # Calculate flat age at transaction
-        X['flat_age'] = X['transaction_year'] - X['lease_commence_date'] 
-        
-        # Drop the original columns as we've created a derived feature
-        X = X.drop(['lease_commence_date', 'month'], axis=1)
-    
-     # Drop street_name as it's too granular for modeling
-    if 'street_name' in X.columns:
-        X = X.drop('street_name', axis=1)
+        X["flat_age"] = X["transaction_year"] - X["lease_commence_date"]
 
-    # ensure block is numeric
-    if 'block' in X.columns:
-        # Convert block to numeric by removing non-numeric characters
-        X['block'] = X['block'].replace(r'\D', '', regex=True).astype(int)
+    if "flat_type" in X.columns:
+        flat_type_mapping = {
+            "MULTI-GENERATION": "MULTI-GENERATION",
+            "MULTI GENERATION": "MULTI-GENERATION",
+        }
+        X["flat_type_ordered"] = X["flat_type"].map(flat_type_mapping)
 
-    # Step 5: Normalize/scale numeric features
-    numeric_cols = X.select_dtypes(include=["int64", "float64"]).columns
+    if include_features is not None:
+        X = X[include_features]
+    if exclude_features is not None:
+        X = X.drop(columns=exclude_features, errors="ignore")
+
+    return X, y
+
+
+def get_cleaned_normalized_data(
+    X: pd.DataFrame = None,
+    y: pd.Series = None,
+    include_features=None,
+    exclude_features=None,
+):
+    """
+    Clean the dataset by removing rows with missing values and perform data normalization.
+
+    Parameters:
+    -----------
+    X : pd.DataFrame
+        Feature dataframe.
+    y : pd.Series
+        Target series.
+
+    Returns:
+    --------
+    Tuple[pd.DataFrame, pd.Series]
+        Cleaned feature dataframe and target series.
+    """
+
+    X, y = get_cleaned_data(X, y)
+
+    if "lease_commence_date" in X.columns:
+        X = X.drop(["lease_commence_date"], axis=1)
+
+    if "month" in X.columns:
+        X = X.drop(["month"], axis=1)
+
+    if "transaction_year" in X.columns:
+        X = X.drop(["transaction_year"], axis=1)
+
+    categorical_cols = ["town", "flat_model", "block"]
+    for col in categorical_cols:
+        if col in X.columns:
+            # create a new column for every unique value in the categorical column
+            dummies = pd.get_dummies(X[col], prefix=col, drop_first=True)
+            X = pd.concat([X, dummies], axis=1)
+            X = X.drop(col, axis=1)
+
+    if "flat_type" in X.columns:
+        flat_type_mapping = {
+            "1 ROOM": 1,
+            "2 ROOM": 2,
+            "3 ROOM": 3,
+            "4 ROOM": 4,
+            "5 ROOM": 5,
+            "MULTI-GENERATION": 6,
+            "EXECUTIVE": 7,
+        }
+        X["flat_type_ordered"] = X["flat_type"].map(flat_type_mapping)
+        X = X.drop(["flat_type"], axis=1)
+
+    # Normalize/scale numeric features
+    numeric_cols = [
+        "floor_area_sqm",
+        "storey_range",
+        "flat_age",
+        "relative_month",
+        "flat_type_ordered",
+    ]
     for col in numeric_cols:
-        # Skip the target column if it's in X
-        if col == "resale_price":
-            continue
 
         # Normalize using min-max scaling
         min_val = X[col].min()
         max_val = X[col].max()
         if max_val > min_val:  # Avoid division by zero
             X[col] = (X[col] - min_val) / (max_val - min_val)
+
+    if X.isna().any().any():
+        print(
+            f"Found {X.isna().sum().sum()} NaN values after processing. Handling them..."
+        )
+
+        for col in X.select_dtypes(include=["number"]).columns:
+            X[col] = X[col].fillna(X[col].mean())
+
+        for col in X.select_dtypes(include=["object", "category"]).columns:
+            X[col] = X[col].fillna(0)
+
+    if include_features is not None:
+        X = X[include_features]
+    if exclude_features is not None:
+        X = X.drop(columns=exclude_features, errors="ignore")
 
     return X, y
 
