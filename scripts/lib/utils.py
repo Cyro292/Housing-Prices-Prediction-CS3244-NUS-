@@ -4,7 +4,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from typing import List, Tuple, Optional, Union, Dict, Any
+from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
+
+DATADIR = os.path.join(os.path.dirname(__file__), "../data")
 
 
 def load_resale_data(
@@ -131,8 +134,7 @@ def load_all_resale_data(
         "Resale flat prices based on registration date from Jan-2017 onwards.csv",
     ]
 
-    data_dir = os.path.join(os.path.dirname(__file__), "../data")
-    data_files = [os.path.join(data_dir, file) for file in data]
+    data_files = [os.path.join(DATADIR, file) for file in data]
 
     return load_resale_data(
         file_paths=data_files,
@@ -344,3 +346,117 @@ def get_train_split_data(
     """
 
     return train_test_split(X, y, train_size=train_size, random_state=random_state)
+
+
+def load_all_resale_data_feature_optimised(verbose: bool = True):
+    """
+    Load resale flat price data from CSV files and split into features and target dataframes. Can only be done with all parameters
+
+    Parameters:
+    -----------
+    verbose : bool, default=True
+        Whether to print information during loading.
+
+    Returns:
+    --------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        X: Features dataframe
+        y: Target dataframe (resale prices)
+    """
+
+    if verbose:
+        print("Loading resale flat price data...")
+
+    optimised_file = ["X_pca.npy"]
+
+    data_files = [os.path.join(DATADIR, file) for file in optimised_file]
+
+    X, y = load_all_resale_data()
+
+    X, y = get_cleaned_normalized_data(X, y)
+
+    if not all(os.path.exists(file) for file in data_files):
+
+        if verbose:
+            print(
+                "Optimised file not found. Creating optimised file... This might take a few minutes."
+            )
+
+        opt_X, opt_y = create_feature_optimised_file(X, y, verbose=verbose)
+        return opt_X, opt_y
+
+    opt_matrix_X = np.load(data_files[0])
+    opt_X = pd.DataFrame(opt_matrix_X)
+
+    return opt_X, y
+
+
+def get_feature_optimised_data(
+    X: pd.DataFrame = None,
+    y: pd.Series = None,
+    vebose: bool = True,
+) -> Tuple[pd.DataFrame, pd.Series]:
+    """
+    Load resale flat price data from CSV files and split into features and target dataframes. Can only be done with all parameters
+
+    Parameters:
+    -----------
+    verbose : bool, default=True
+        Whether to print information during loading.
+
+    Returns:
+    --------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        X: Features dataframe
+        y: Target dataframe (resale prices)
+    """
+
+    if vebose:
+        print("Loading resale flat price data...")
+
+    optimised_file = ["X_pca.npy"]
+
+    data_files = [os.path.join(DATADIR, file) for file in optimised_file]
+
+    if not all(os.path.exists(file) for file in data_files):
+
+        if vebose:
+            print(
+                "Optimised file not found. Creating optimised file... This might take a few minutes."
+            )
+
+        opt_X, _ = create_feature_optimised_file(X, y, vebose=vebose)
+
+        return opt_X, y
+
+    opt_matrix_X = np.load(data_files[0])
+    opt_X = pd.DataFrame(opt_matrix_X)
+
+    return opt_X, y
+
+
+def create_feature_optimised_file(
+    X: pd.DataFrame = None,
+    y: pd.Series = None,
+    vebose: bool = True,
+) -> Tuple[pd.DataFrame, pd.Series]:
+
+    optimised_file = ["X_pca.npy"]
+
+    data_files = [os.path.join(DATADIR, file) for file in optimised_file]
+
+    if os.path.exists(data_files[0]):
+
+        if vebose:
+            print(f"Optimised file {data_files[0]} already exists. Skipping creation.")
+
+        return
+
+    pca = PCA(n_components=50)
+    X_pca = pca.fit_transform(X)
+    np.save(data_files[0], X_pca)
+
+    if vebose:
+        print(f"Optimised file {data_files[0]} created.")
+
+    return pd.DataFrame(X_pca), y
