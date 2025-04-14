@@ -57,7 +57,7 @@ def train_model(model, train_loader, optimizer, criterion, device):
         batch_y = batch_y.to(device, non_blocking=True)
         
         # Forward pass with mixed precision
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast('cuda'):
             outputs = model(batch_X)
             loss = criterion(outputs, batch_y) / ACCUMULATION_STEPS
         
