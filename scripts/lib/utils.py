@@ -210,12 +210,12 @@ def get_cleaned_data(
 
         X["flat_age"] = X["transaction_year"] - X["lease_commence_date"]
 
-    if "flat_type" in X.columns:
-        flat_type_mapping = {
-            "MULTI-GENERATION": "MULTI-GENERATION",
-            "MULTI GENERATION": "MULTI-GENERATION",
-        }
-        X["flat_type_ordered"] = X["flat_type"].map(flat_type_mapping)
+    # if "flat_type" in X.columns:
+        # flat_type_mapping = {
+        #     "MULTI-GENERATION": "MULTI-GENERATION",
+        #     "MULTI GENERATION": "MULTI-GENERATION",
+        # }
+        # X["flat_type_ordered"] = X["flat_type"].replace(flat_type_mapping)
 
     if include_features is not None:
         X = X[include_features]
@@ -273,8 +273,9 @@ def get_cleaned_normalized_data(
             "3 ROOM": 3,
             "4 ROOM": 4,
             "5 ROOM": 5,
+            "MULTI GENERATION": 5,
             "MULTI-GENERATION": 6,
-            "EXECUTIVE": 7,
+            "EXECUTIVE": 6,
         }
         X["flat_type_ordered"] = X["flat_type"].map(flat_type_mapping)
         X = X.drop(["flat_type"], axis=1)
