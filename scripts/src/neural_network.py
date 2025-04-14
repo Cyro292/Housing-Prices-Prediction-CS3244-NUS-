@@ -27,7 +27,7 @@ def get_device():
 
 def df_to_tensor(df):
     """Keep data on CPU with float32 precision"""
-    return torch.from_numpy(df.astype('float32').values).float()
+    return torch.from_numpy(df.astype('float32').values)
 
 # --- Memory-Efficient Model ---
 class HousePricePredictor(nn.Module):
