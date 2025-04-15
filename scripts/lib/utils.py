@@ -209,15 +209,7 @@ def get_cleaned_data(
 
         X["relative_month"] = X["month"].apply(get_num_months) - first_trans_offset
         X["transaction_year"] = pd.to_datetime(X["month"]).dt.year
-
-        X["flat_age"] = X["transaction_year"] - X["lease_commence_date"]
-
-    # if "flat_type" in X.columns:
-        # flat_type_mapping = {
-        #     "MULTI-GENERATION": "MULTI-GENERATION",
-        #     "MULTI GENERATION": "MULTI-GENERATION",
-        # }
-        # X["flat_type_ordered"] = X["flat_type"].replace(flat_type_mapping)
+        X["flat_age"] = X["month"].apply(get_num_months) - X["lease_commence_date"] * 12
 
     if include_features is not None:
         X = X[include_features]
@@ -250,9 +242,6 @@ def get_cleaned_normalized_data(
     """
 
     X, y = get_cleaned_data(X, y)
-
-    if "lease_commence_date" in X.columns:
-        X = X.drop(["lease_commence_date"], axis=1)
 
     if "month" in X.columns:
         X = X.drop(["month"], axis=1)
@@ -287,6 +276,7 @@ def get_cleaned_normalized_data(
         "floor_area_sqm",
         "storey_range",
         "flat_age",
+        "lease_commence_date",
         "relative_month",
         "flat_type_ordered",
     ]
