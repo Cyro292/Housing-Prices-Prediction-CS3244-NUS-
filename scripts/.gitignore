@@ -2,3 +2,5 @@
 venv
 merged_data.csv
 processed_data.csv
+
+data/X_pca.npy
