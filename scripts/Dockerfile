@@ -6,11 +6,15 @@ WORKDIR /app
 
 # Copy and install dependencies
 COPY requirements.txt /app
-RUN python -m pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy project files
+COPY setup.py /app
 COPY . /app
 
-# Run the application
-CMD ["python", "main.py"]
+# Install system dependencies
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install jupyter
+
+EXPOSE 8888
+
+# Run jupyter notebook
+CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
