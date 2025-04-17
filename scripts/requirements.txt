@@ -3,7 +3,7 @@ setuptools>=65.5.0
 
 
 # Core machine learning library (includes StandardScaler)
-scikit-learn==1.2.0
+scikit-learn==1.6.1
 
 # Categorical encoding techniques (includes TargetEncoder)
 category_encoders==2.5.0
