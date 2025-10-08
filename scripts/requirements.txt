@@ -1,5 +1,9 @@
+#setup
+setuptools>=65.5.0
+
+
 # Core machine learning library (includes StandardScaler)
-scikit-learn==1.2.0
+scikit-learn==1.6.1
 
 # Categorical encoding techniques (includes TargetEncoder)
 category_encoders==2.5.0
@@ -15,12 +19,12 @@ seaborn==0.12.2
 # Scientific computing (if needed)
 scipy==1.9.3
 
-# Model persistence and utility functions
+pyspedas==1.7.19
 joblib==1.2.0
-
-
 tables==3.8.0
 gensim==4.3.0
 blosc2==2.0.0
 cython>=0.29.21
 FuzzyTM>=0.4.0
+
+-e .
